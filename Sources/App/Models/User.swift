@@ -9,7 +9,7 @@ import Vapor
 import FluentPostgreSQL
 
 final class User: Codable {
-    var id: UUID?
+    var id: Int?
     var name: String
     var username: String
     init(name: String, username: String) {
@@ -17,7 +17,7 @@ final class User: Codable {
         self.username = username
     }
 }
-extension User: PostgreSQLUUIDModel {}
+extension User: PostgreSQLModel {}
 extension User: Content {}
 extension User: Migration {}
 extension User: Parameter {}

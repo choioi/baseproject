@@ -20,8 +20,8 @@ struct UsersController: RouteCollection {
         return User.query(on: req).all()
     }
     //LIST ONE
-    func getHandler(_ req: Request) throws -> Future<User> {
-        return try req.parameters.next(User.self)
+    func getHandler(_ req: Request) throws -> Future<User.Public> {
+        return try req.parameters.next(User.self).convertToPublic()
     }
     //DELETE
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {

@@ -12,16 +12,19 @@ struct UsersController: RouteCollection {
         
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let guardAuthMiddleware = User.guardAuthMiddleware()
-        let basicAuthGroup = usersRoute.grouped(
+        let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware)
+
+        let protected = usersRoute.grouped(
             basicAuthMiddleware,
             guardAuthMiddleware)
         
         usersRoute.post("register", use: register)
         usersRoute.post(User.self, use: createHandler)
-        basicAuthGroup.get(use: getAllHandler)
-        basicAuthGroup.get(User.parameter, use: getHandler)
-        basicAuthGroup.delete(User.parameter, use: deleteHandler)
-        basicAuthGroup.put(User.parameter, use: updateHandler)
+        protected.post("login", use: login)
+        protected.get(use: getAllHandler)
+        protected.get(User.parameter, use: getHandler)
+        protected.delete(User.parameter, use: deleteHandler)
+        protected.put(User.parameter, use: updateHandler)
 
         
     }
@@ -39,6 +42,12 @@ struct UsersController: RouteCollection {
                 return storedUser.convertToPublic()
             }
         }
+    }
+    
+    func login(req : Request) throws -> Future<Token> {
+        let user = try req.requireAuthenticated(User.self)
+        let token = try Token.generate(for: user)
+        return token.save(on: req)
     }
     
     //LIST ALL

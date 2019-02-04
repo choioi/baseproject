@@ -7,26 +7,28 @@
 
 import Vapor
 import FluentPostgreSQL
+import Authentication
+
 
 final class User: Codable {
     var id: Int?
     var name: String
-    var username: String
+    var email: String
     var password: String
-    init(name: String, username: String,password: String) {
+    init(name: String, email: String,password: String) {
         self.name = name
-        self.username = username
+        self.email = email
         self.password = password
     }
     final class Public: Codable {
         var id: Int?
         var name: String
-        var username: String
+        var email: String
         
-        init(id: Int?, name: String, username: String) {
+        init(id: Int?, name: String, email: String) {
             self.id = id
             self.name = name
-            self.username = username
+            self.email = email
         }
     }
    
@@ -41,14 +43,14 @@ extension User: Migration {
         -> Future<Void> {
             return Database.create(self, on: connection) { builder in
                 try addProperties(to: builder)
-                builder.unique(on: \.username)
+                builder.unique(on: \.email)
             }
     }
 }
 //2 ham nay di chung! Future 1 function
 extension User {
     func convertToPublic() -> User.Public {
-        return User.Public(id: id, name: name, username: username)
+        return User.Public(id: id, name: name, email: email)
     }
 }
 extension Future where T: User {
@@ -57,4 +59,10 @@ extension Future where T: User {
             return user.convertToPublic()
         }
     }
+}
+extension User: BasicAuthenticatable {
+    static let usernameKey: UsernameKey = \User.email
+    static let passwordKey: PasswordKey = \User.password
+    
+
 }

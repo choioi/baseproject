@@ -6,6 +6,7 @@ struct UsersController: RouteCollection {
     func boot(router: Router) throws {
         let usersRoute = router.grouped("api", "users")
         usersRoute.post(User.self, use: createHandler)
+        usersRoute.get(use: getAllHandler)
         usersRoute.get(User.parameter, use: getHandler)
         usersRoute.delete(User.parameter, use: deleteHandler)
         usersRoute.put(User.parameter, use: updateHandler)
@@ -32,7 +33,9 @@ struct UsersController: RouteCollection {
         return try flatMap(to: User.self,
                            req.parameters.next(User.self),
                            req.content.decode(User.self)) { user, updatedUser in
-                            user.password = updatedUser.password
+                            user.password = try BCrypt.hash(updatedUser.password)
+                            user.username = updatedUser.username
+                            user.name = updatedUser.name
                             return user.save(on: req)
         }
     }

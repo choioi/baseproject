@@ -12,19 +12,20 @@ struct UsersController: RouteCollection {
         
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let guardAuthMiddleware = User.guardAuthMiddleware()
-        let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware)
+        //let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware)
 
         let protected = usersRoute.grouped(
             basicAuthMiddleware,
             guardAuthMiddleware)
         
-        usersRoute.post("register", use: register)
+        usersRoute.post("register", use: createHandler2)
         usersRoute.post(User.self, use: createHandler)
         protected.post("login", use: login)
         protected.get(use: getAllHandler)
         protected.get(User.parameter, use: getHandler)
         protected.delete(User.parameter, use: deleteHandler)
         protected.put(User.parameter, use: updateHandler)
+        //protected.post("update", use: updateHandler2)
 
         
     }
@@ -33,7 +34,7 @@ struct UsersController: RouteCollection {
         user.password = try BCrypt.hash(user.password)
         return user.save(on: req).convertToPublic()
     }
-    func register(_ req: Request) throws -> Future<User.Public> {
+    func createHandler2(_ req: Request) throws -> Future<User.Public> {
         return try req.content.decode(User.self).flatMap { user in
             let hasher = try req.make(BCryptDigest.self)
             let passwordHashed = try hasher.hash(user.password)
@@ -43,11 +44,36 @@ struct UsersController: RouteCollection {
             }
         }
     }
+    //EDIT
+    func updateHandler(_ req: Request) throws -> Future<User> {
+        return try flatMap(to: User.self,
+                           req.parameters.next(User.self),
+                           req.content.decode(User.self)) { user, updatedUser in
+                            
+                            //authen
+                            let user = try req.requireAuthenticated(User.self)
+
+                            user.password = try BCrypt.hash(updatedUser.password)
+                            user.email = updatedUser.email
+                            user.name = updatedUser.name
+                            
+                            return user.save(on: req)
+        }
+    }
+//    func updateHandler2(_ req: Request) throws -> Future<User> {
+//        return try req.content.decode(User.self).flatMap({ (user) -> in
+//            <#code#>
+//        })
+//    }
     
     func login(req : Request) throws -> Future<Token> {
         let user = try req.requireAuthenticated(User.self)
         let token = try Token.generate(for: user)
         return token.save(on: req)
+    }
+    func login2(_ req: Request) throws -> User.Public {
+        let user = try req.requireAuthenticated(User.self)
+        return User.Public(id: try user.requireID(), name: user.name, email: user.email)
     }
     
     //LIST ALL
@@ -58,23 +84,14 @@ struct UsersController: RouteCollection {
     }
     //LIST ONE
     func getHandler(_ req: Request) throws -> Future<User.Public> {
+       
         return try req.parameters.next(User.self).convertToPublic()
     }
     //DELETE
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
         return try req.parameters.next(User.self).delete(on: req).transform(to: HTTPStatus.noContent)
     }
-    //EDIT
-    func updateHandler(_ req: Request) throws -> Future<User> {
-        return try flatMap(to: User.self,
-                           req.parameters.next(User.self),
-                           req.content.decode(User.self)) { user, updatedUser in
-                            user.password = try BCrypt.hash(updatedUser.password)
-                            user.email = updatedUser.email
-                            user.name = updatedUser.name
-                            return user.save(on: req)
-        }
-    }
+    
     
 }
 

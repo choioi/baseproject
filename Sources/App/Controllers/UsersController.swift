@@ -124,13 +124,9 @@ struct UsersController: RouteCollection {
     //=================================LOGIN=================================
     
     //=================================VIEW PROFILE=================================
-    func profile(_ req: Request,tokenParam: TokenParam) throws -> Future<User> {
-        //let errorUser = User(name: "", email: "", password: "")
-        //Buoc 1 , dung token user gui len de lay dc userID
-        //Buoc 2, tu UserID, get UserInfo trong data.
-        return getToKenFromTokenString(req: req, tokenString: tokenParam.token).flatMap(to: User.self) { token in
-            return self.getUserFromUserID(req: req, userID: token.userID)
-        }
+    func profile(_ req: Request,tokenParam: TokenParam) throws -> User {
+        let user = try req.requireAuthenticated(User.self)
+        return user
     }
     
     

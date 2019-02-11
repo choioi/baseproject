@@ -11,6 +11,7 @@ final class Token: Codable {
     init(token: String, userID: User.ID) {
         self.token = token
         self.userID = userID
+
     }
 }
 

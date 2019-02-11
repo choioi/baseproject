@@ -42,5 +42,10 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
 
     
     migrations.add(migration: AdminUser.self, database: .psql)
+    //them field cho User thi add them, neu run tu dau` thi ko can add, chi add khi chay database real can update!
+    //migrations.add(migration: AddTwitterToUser.self,database: .psql)
+    //migrations.add(migration: AddCreatedTimeToUser.self,database: .psql)
+    
+    
     services.register(migrations)
 }

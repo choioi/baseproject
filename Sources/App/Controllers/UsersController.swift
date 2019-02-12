@@ -2,7 +2,7 @@ import Foundation
 import Vapor
 import Crypto
 import Authentication
-import FluentPostgreSQL
+import FluentPostgreSQL // ~~ phai import cai nay
 import Fluent // ~~ phai import cai nay
 struct UsersController: RouteCollection {
     func boot(router: Router) throws {
@@ -35,8 +35,8 @@ struct UsersController: RouteCollection {
         basicProtected.get("login", use: login)
         //get profile
         tokenProtected.post("profile", use: getCurrentProfileHandler)
-        //update
-        tokenProtected.post(User.self, at: "update", use: updateHandler)
+        //edit
+        tokenProtected.post(User.self, at: "update", use: editHandler)
         
         //token protect
         //get all user => for test or admin only
@@ -48,7 +48,29 @@ struct UsersController: RouteCollection {
 
         
     }
-    //=================================ADD=================================
+    func login(req : Request) throws -> Future<Token> {
+        let user = try req.requireAuthenticated(User.self)//check login by basic authen.
+        return clearOldTokenHaveID(req: req, userID: try user.requireID()).flatMap { (status) -> (EventLoopFuture<Token>) in
+            let token = try Token.generate(for: user)
+            return (token.save(on: req))
+        }
+    }
+    func createHandler(_ req: Request,user: User) throws -> Future<User.Public> {
+        user.password = try BCrypt.hash(user.password)//update raw password thanh hashed password
+        return user.save(on: req).convertToPublic() // save xong vao database return model public!
+    }
+    func editHandler(_ req: Request,user: User) throws -> Future<User> {
+        let userNeedEdit = try req.requireAuthenticated(User.self)
+        userNeedEdit.name = user.name
+        userNeedEdit.password = try BCrypt.hash(user.password)
+        return userNeedEdit.save(on: req)
+        
+    }
+    func getCurrentProfileHandler(_ req: Request) throws -> User {
+        let user = try req.requireAuthenticated(User.self)
+        return user
+    }
+  
     /*
     func createHandler(_ req: Request, user: User) throws -> Future<User.Public> {
         user.password = try BCrypt.hash(user.password)
@@ -66,12 +88,8 @@ struct UsersController: RouteCollection {
         }
     }//=> ko nen dung vi phai decode content
      */
-    func createHandler(_ req: Request,user: User) throws -> Future<User.Public> {
-        user.password = try BCrypt.hash(user.password)//update raw password thanh hashed password
-        return user.save(on: req).convertToPublic() // save xong vao database return model public!
-    }
-    //=================================ADD=================================
-   
+    
+  
     //EDIT
     //Ko nen dung cach nay, vi co the hack truyen 1 tham so kha'c
     /*
@@ -91,37 +109,15 @@ struct UsersController: RouteCollection {
         }
     }
      */
-    func updateHandler(_ req: Request,user: User) throws -> Future<User> {
-        let userNeedEdit = try req.requireAuthenticated(User.self)
-        userNeedEdit.name = user.name
-        userNeedEdit.password = try BCrypt.hash(user.password)
-        return userNeedEdit.save(on: req)
-        
-    }
     
-    //=================================LOGIN=================================
-    func login(req : Request) throws -> Future<Token> {
-        let user = try req.requireAuthenticated(User.self)//check login by basic authen.
-        return clearOldTokenHaveID(req: req, userID: try user.requireID()).flatMap { (status) -> (EventLoopFuture<Token>) in
-            let token = try Token.generate(for: user)
-            return (token.save(on: req))
-        }
-    }
-
+ 
     func clearAllToken(req : Request) {
         _ = Token.query(on: req).delete(force: true)
     }
     func clearOldTokenHaveID(req : Request,userID: Int?) -> Future<HTTPStatus> {
         return Token.query(on: req).filter(\.userID == userID ?? 0).delete().transform(to: HTTPStatus.continue)
     }
-
-    //=================================LOGIN=================================
-    
-    //=================================VIEW PROFILE=================================
-    func getCurrentProfileHandler(_ req: Request) throws -> User {
-        let user = try req.requireAuthenticated(User.self)
-        return user
-    }
+ 
     
     
     /*
@@ -139,12 +135,7 @@ struct UsersController: RouteCollection {
     }
     */
     //=================================VIEW PROFILE=================================
-    
-    
-    
-    
-    
-    
+   
     //LIST ALL USER
     func getAllHandler(_ req: Request) throws -> Future<[User]> {
         return User.query(on: req).all()

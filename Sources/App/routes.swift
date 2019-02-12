@@ -12,8 +12,13 @@ public func routes(_ router: Router) throws {
         return "Hello, world!"
     }
 
+    let acronymsController = AcronymsController()
+    try router.register(collection: acronymsController)
+    
     let usersController = UsersController()
-    // 2
     try router.register(collection: usersController)
+    
+    let categoriesController = CategoriesController()
+    try router.register(collection: categoriesController)
   
 }

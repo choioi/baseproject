@@ -39,9 +39,15 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // 4
     migrations.add(model: User.self, database: .psql)
     migrations.add(model: Token.self, database: .psql)
-
+    migrations.add(model: Acronym.self, database: .psql)
+    migrations.add(model: Category.self, database: .psql)
+    migrations.add(model: AcronymCategoryPivot.self, database: .psql)
     
     migrations.add(migration: AdminUser.self, database: .psql)
+   
+    
+    
+    
     //them field cho User thi add them, neu run tu dau` thi ko can add, chi add khi chay database real can update!
     //migrations.add(migration: AddTwitterToUser.self,database: .psql)
     //migrations.add(migration: AddCreatedTimeToUser.self,database: .psql)

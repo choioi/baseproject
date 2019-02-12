@@ -89,17 +89,11 @@ struct UsersController: RouteCollection {
     func updateHandler2(_ req: Request,user: User) throws -> Future<User> {
         //Decode thi cần time -> ko có ngay-> kiểu Future.
         let userNeedEdit = try req.requireAuthenticated(User.self) //authen check token, from token return user! qua tuyet voi`!!
-        
         userNeedEdit.name = user.name
-        //userNeedEdit.email = user.email
         userNeedEdit.password = try BCrypt.hash(user.password)
-        //print(user.id)
-        
         return userNeedEdit.save(on: req)
         
     }
-    
-    
     
     //=================================LOGIN=================================
     func login(req : Request) throws -> Future<Token> {
@@ -109,8 +103,8 @@ struct UsersController: RouteCollection {
             let token = try Token.generate(for: user)
             return (token.save(on: req))
         }
-
     }
+
     func clearAllToken(req : Request) {
         _ = Token.query(on: req).delete(force: true)
     }

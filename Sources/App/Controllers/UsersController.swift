@@ -87,8 +87,7 @@ struct UsersController: RouteCollection {
         }
     }
     func updateHandler2(_ req: Request,user: User) throws -> Future<User> {
-        //Decode thi cần time -> ko có ngay-> kiểu Future.
-        let userNeedEdit = try req.requireAuthenticated(User.self) //authen check token, from token return user! qua tuyet voi`!!
+        let userNeedEdit = try req.requireAuthenticated(User.self)
         userNeedEdit.name = user.name
         userNeedEdit.password = try BCrypt.hash(user.password)
         return userNeedEdit.save(on: req)

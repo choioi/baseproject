@@ -97,14 +97,11 @@ struct UsersController: RouteCollection {
     
     //=================================LOGIN=================================
     func login(req : Request) throws -> Future<Token> {
-        //clearAllToken(req: req)
         let user = try req.requireAuthenticated(User.self)//check login by basic authen.
         return clearOldTokenHaveID(req: req, userID: try user.requireID()).flatMap { (status) -> (EventLoopFuture<Token>) in
             let token = try Token.generate(for: user)
             return (token.save(on: req))
         }
-        
-        
     }
 
     func clearAllToken(req : Request) {

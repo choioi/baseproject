@@ -7,7 +7,10 @@ final class Token: Codable {
     var id: UUID?
     var token: String
     var userID: User.ID
-    
+    static var createdAtKey: TimestampKey? = \.createdAt
+    static var updatedAtKey: TimestampKey? = \.updatedAt
+    var createdAt: Date?
+    var updatedAt: Date?
     init(token: String, userID: User.ID) {
         self.token = token
         self.userID = userID

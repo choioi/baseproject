@@ -9,21 +9,23 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     try services.register(LeafProvider())
     try services.register(AuthenticationProvider())
     
-    
-    
-    
-    
     // Register routes to the router
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
 
-    // Register middleware
-    var middlewares = MiddlewareConfig() // Create _empty_ middleware config
-    // middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
-    services.register(middlewares)
+    // register custom service types
+    services.register(LogMiddleware.self)
+    services.register(SecretMiddleware.self)
+    
+    // configure middleware
+    var middleware = MiddlewareConfig()
+    middleware.use(LogMiddleware.self)
+    middleware.use(ErrorMiddleware.self)
+    services.register(middleware)
 
+
+    
     // Configure a database
     var databases = DatabasesConfig()
     // 3
@@ -44,14 +46,19 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: AcronymCategoryPivot.self, database: .psql)
     
     migrations.add(migration: AdminUser.self, database: .psql)
-   
+//    switch env {
+//    case .development, .testing:
+//        migrations.add(migration: AdminUser.self, database: .psql)
+//    default:
+//        break
+//    }
     
-    
-    
+    migrations.add(
+        migration: MakeCategoriesUnique.self,
+        database: .psql)
     //them field cho User thi add them, neu run tu dau` thi ko can add, chi add khi chay database real can update!
     //migrations.add(migration: AddTwitterToUser.self,database: .psql)
     //migrations.add(migration: AddCreatedTimeToUser.self,database: .psql)
-    
-    
+    //migrations.add(migration: AddCreatedTimeToToken.self,database: .psql)
     services.register(migrations)
 }

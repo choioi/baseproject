@@ -64,3 +64,17 @@ extension Acronym: Migration {
     }
   }
 }
+
+//AcronymWithUserAndCategories for purpose show only
+
+final class AcronymWithUserAndCategories: Codable {
+    var acronym: Acronym
+    var user: User
+    var categories: [Category]
+    init(acronym: Acronym, user: User, categories: [Category]) {
+        self.acronym = acronym
+        self.user = user
+        self.categories = categories
+    }
+}
+extension AcronymWithUserAndCategories: Content {}

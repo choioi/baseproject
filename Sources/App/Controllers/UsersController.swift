@@ -7,13 +7,14 @@ import Fluent // ~~ phai import cai nay
 struct UsersController: RouteCollection {
     func boot(router: Router) throws {
         let usersRoute = router.grouped("api", "users")
-
+        
+        
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
-
+        
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
-       
+        
         let guardAuthMiddleware = User.guardAuthMiddleware()
-       
+        
         let tokenProtected = usersRoute.grouped(
             tokenAuthMiddleware,
             guardAuthMiddleware)
@@ -22,6 +23,11 @@ struct UsersController: RouteCollection {
             basicAuthMiddleware,
             guardAuthMiddleware)
         
+        //secrectGroup router
+        //Must add header key : X-Secret, value : phung
+        usersRoute.group(SecretMiddleware.self) { secretGroup in
+            secretGroup.delete(User.parameter, use: deleteHandler)
+        }
         
         //unprotect
         
@@ -41,11 +47,8 @@ struct UsersController: RouteCollection {
         //token protect
         //get all user => for test or admin only
         tokenProtected.get(use: getAllHandler)
-       
-        //Ko cho xoa user, xoa item cua user
-        //tokenProtected.delete(User.parameter, use: deleteHandler)
+        tokenProtected.get("getMyItemList", use: getAllItemHandler)
         
-
         
     }
     func login(req : Request) throws -> Future<Token> {
@@ -70,72 +73,79 @@ struct UsersController: RouteCollection {
         let user = try req.requireAuthenticated(User.self)
         return user
     }
-  
+    func getAllItemHandler(_ req: Request) throws -> Future<[Acronym]> {
+        //        return try req.parameters.next(User.self).flatMap(to: [Acronym].self) { user in
+        //            try user.acronyms.query(on: req).all()
+        //        }
+        let user = try req.requireAuthenticated(User.self)
+        return try user.acronyms.query(on: req).all()
+    }
+    
     /*
-    func createHandler(_ req: Request, user: User) throws -> Future<User.Public> {
-        user.password = try BCrypt.hash(user.password)
-        return user.save(on: req).convertToPublic()
-    }//==> ko nen dung, vi URL ko ro rang
-    func createHandler2(_ req: Request) throws -> Future<User.Public> {
-        return try req.content.decode(User.self).flatMap { user in
-            let hasher = try req.make(BCryptDigest.self)
-            let passwordHashed = try hasher.hash(user.password)
-            //let newUser = User(name: user.name, email: user.email, password: passwordHashed)
-            let newUser = User(name: user.name, email: user.email, password: passwordHashed)
-            return newUser.save(on: req).map { storedUser in
-                return storedUser.convertToPublic()
-            }
-        }
-    }//=> ko nen dung vi phai decode content
+     func createHandler(_ req: Request, user: User) throws -> Future<User.Public> {
+     user.password = try BCrypt.hash(user.password)
+     return user.save(on: req).convertToPublic()
+     }//==> ko nen dung, vi URL ko ro rang
+     func createHandler2(_ req: Request) throws -> Future<User.Public> {
+     return try req.content.decode(User.self).flatMap { user in
+     let hasher = try req.make(BCryptDigest.self)
+     let passwordHashed = try hasher.hash(user.password)
+     //let newUser = User(name: user.name, email: user.email, password: passwordHashed)
+     let newUser = User(name: user.name, email: user.email, password: passwordHashed)
+     return newUser.save(on: req).map { storedUser in
+     return storedUser.convertToPublic()
+     }
+     }
+     }//=> ko nen dung vi phai decode content
      */
     
-  
+    
     //EDIT
     //Ko nen dung cach nay, vi co the hack truyen 1 tham so kha'c
     /*
-    func updateHandler(_ req: Request) throws -> Future<User> {
-        return try flatMap(to: User.self,
-                           req.parameters.next(User.self),
-                           req.content.decode(User.self)) { user, updatedUser in
-                            
-                            //authen
-                            let user = try req.requireAuthenticated(User.self)
-
-                            user.password = try BCrypt.hash(updatedUser.password)
-                            user.email = updatedUser.email
-                            user.name = updatedUser.name
-                            
-                            return user.save(on: req)
-        }
-    }
+     func updateHandler(_ req: Request) throws -> Future<User> {
+     return try flatMap(to: User.self,
+     req.parameters.next(User.self),
+     req.content.decode(User.self)) { user, updatedUser in
+     
+     //authen
+     let user = try req.requireAuthenticated(User.self)
+     
+     user.password = try BCrypt.hash(updatedUser.password)
+     user.email = updatedUser.email
+     user.name = updatedUser.name
+     
+     return user.save(on: req)
+     }
+     }
      */
     
- 
+    
     func clearAllToken(req : Request) {
         _ = Token.query(on: req).delete(force: true)
     }
     func clearOldTokenHaveID(req : Request,userID: Int?) -> Future<HTTPStatus> {
         return Token.query(on: req).filter(\.userID == userID ?? 0).delete().transform(to: HTTPStatus.continue)
     }
- 
+    
     
     
     /*
-    func getToKenFromTokenString(req: Request,tokenString: String) -> Future<Token> {
-        print("getToKenFromTokenString")
-        return Token.query(on: req).filter(\.token == tokenString).first().unwrap(or: Abort(.notFound))
-    }
-    func getUserFromUserID(req: Request,userID: Int) -> Future<User> {
-        print("getUserFromUserID")
-        return User.find(userID, on: req).unwrap(or: Abort(.notFound))
-    }
-    func getTokenFromUserID(req: Request,userID: Int) -> Future<Token> {
-        print("getTokenFromUserID:\(userID)")
-        return Token.query(on: req).filter(\.userID == userID).first().unwrap(or: Abort(.notFound))
-    }
-    */
+     func getToKenFromTokenString(req: Request,tokenString: String) -> Future<Token> {
+     print("getToKenFromTokenString")
+     return Token.query(on: req).filter(\.token == tokenString).first().unwrap(or: Abort(.notFound))
+     }
+     func getUserFromUserID(req: Request,userID: Int) -> Future<User> {
+     print("getUserFromUserID")
+     return User.find(userID, on: req).unwrap(or: Abort(.notFound))
+     }
+     func getTokenFromUserID(req: Request,userID: Int) -> Future<Token> {
+     print("getTokenFromUserID:\(userID)")
+     return Token.query(on: req).filter(\.userID == userID).first().unwrap(or: Abort(.notFound))
+     }
+     */
     //=================================VIEW PROFILE=================================
-   
+    
     //LIST ALL USER
     func getAllHandler(_ req: Request) throws -> Future<[User]> {
         return User.query(on: req).all()
@@ -144,7 +154,7 @@ struct UsersController: RouteCollection {
     func getAllTkenHandler(_ req: Request) throws -> Future<[Token]> {
         return Token.query(on: req).all()
     }
-
+    
     
     //DELETE
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {

@@ -15,8 +15,8 @@ extension TokenParam: Content {}
 
 struct ItemParam: Content {
     let id: Int?
-    let short: String
-    let long: String
+    let short: String?
+    let long: String?
 }
 
 struct AcronymResponse: Content {

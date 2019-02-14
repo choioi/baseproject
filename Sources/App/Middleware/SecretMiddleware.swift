@@ -28,39 +28,50 @@
 
 import Vapor
 
-struct CategoriesController: RouteCollection {
-  func boot(router: Router) throws {
-    let categoriesRoute = router.grouped("api", "categories")
-    categoriesRoute.get(use: getAllHandler)
-    categoriesRoute.get(Category.parameter, use: getHandler)
-    
-    //Lấy hết tất cả acronym có trong Category
-    
-    categoriesRoute.get(Category.parameter, "acronyms", use: getAcronymsHandler)
+/// Rejects requests that do not contain correct secret.
+final class SecretMiddleware: Middleware {
+  /// The secret expected in the `"X-Secret"` header.
+  let secret: String
 
-    let tokenAuthMiddleware = User.tokenAuthMiddleware()
-    let guardAuthMiddleware = User.guardAuthMiddleware()
-    let tokenAuthGroup = categoriesRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
-    tokenAuthGroup.post(Category.self, use: createHandler)
+  /// Creates a new `SecretMiddleware`.
+  ///
+  /// - parameters:
+  ///     - secret: The secret expected in the `"X-Secret"` header.
+  init(secret: String) {
+    self.secret = secret
   }
 
-    
-  
-  func createHandler(_ req: Request, category: Category) throws -> Future<Category> {
-    return category.save(on: req)
-  }
-
-  func getAllHandler(_ req: Request) throws -> Future<[Category]> {
-     return Category.query(on: req).all()
-  }
-
-  func getHandler(_ req: Request) throws -> Future<Category> {
-    return try req.parameters.next(Category.self)
-  }
-
-  func getAcronymsHandler(_ req: Request) throws -> Future<[Acronym]> {
-    return try req.parameters.next(Category.self).flatMap(to: [Acronym].self) { category in
-      try category.acronyms.query(on: req).all()
+  /// See `Middleware`.
+  func respond(to request: Request, chainingTo next: Responder) throws -> Future<Response> {
+    guard request.http.headers.firstValue(name: .xSecret) == secret else {
+      throw Abort(.unauthorized, reason: "Incorrect X-Secret header.")
     }
+
+    return try next.respond(to: request)
+  }
+}
+
+extension HTTPHeaderName {
+  /// Contains a secret key.
+  ///
+  /// `HTTPHeaderName` wrapper for "X-Secret".
+  static var xSecret: HTTPHeaderName {
+    return .init("X-Secret")
+  }
+}
+
+extension SecretMiddleware: ServiceType {
+  /// See `ServiceType`.
+  static func makeService(for worker: Container) throws -> SecretMiddleware {
+    let secret: String
+    switch worker.environment {
+    case .development: secret = "phung"
+    default:
+      guard let envSecret = Environment.get("SECRET") else {
+        throw Abort(.internalServerError, reason: "No $SECRET set on environment. Use `export SECRET=<secret>`")
+      }
+      secret = envSecret
+    }
+    return SecretMiddleware(secret: secret)
   }
 }

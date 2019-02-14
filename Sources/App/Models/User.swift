@@ -103,4 +103,8 @@ struct AdminUser: Migration {
         return Future.map(on: connection) {}
     }
 }
-
+extension User {
+    var acronyms: Children<User, Acronym> {
+        return children(\.userID)
+    }
+}

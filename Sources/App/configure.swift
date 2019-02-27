@@ -30,9 +30,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     let databaseConfig: PostgreSQLDatabaseConfig
     
-    
-    
-    
     if let url = Environment.get("DATABASE_URL") {
         databaseConfig = PostgreSQLDatabaseConfig(url: url)!
     } else {

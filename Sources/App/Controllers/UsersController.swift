@@ -7,14 +7,9 @@ import Fluent // ~~ phai import cai nay
 struct UsersController: RouteCollection {
     func boot(router: Router) throws {
         let usersRoute = router.grouped("api", "users")
-        
-        
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
-        
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
-        
         let guardAuthMiddleware = User.guardAuthMiddleware()
-        
         let tokenProtected = usersRoute.grouped(
             tokenAuthMiddleware,
             guardAuthMiddleware)

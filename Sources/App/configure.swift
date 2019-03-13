@@ -60,22 +60,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
             database: databaseName,
             password: password)
     }
-    /*
-     environment=
-     DATABASE_HOSTNAME="dbinstances.cr8mipihdiyf.ap-southeast-1.rds.amazonaws.com",
-     DATABASE_USER="phung",
-     DATABASE_DB="dbname",
-     DATABASE_PASSWORD="Heo123456"
-     */
-    /*
-    //amazone
-    databaseConfig = PostgreSQLDatabaseConfig(
-        hostname: "dbinstances.cr8mipihdiyf.ap-southeast-1.rds.amazonaws.com",
-        port: 5432,
-        username: "phung",
-        database: "dbname",
-        password: "Heo123456")
-    */
     
     let database = PostgreSQLDatabase(config: databaseConfig)
     databases.add(database: database, as: .psql)
